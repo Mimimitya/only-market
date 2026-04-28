@@ -1,140 +1,457 @@
 <!doctype html>
+
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>Only Market — В разработке</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <title>Only Market</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
   <style>
     :root {
-      --fg: #fff;
-      --bg: #0b0b0b;
-      --accent: #a78bfa;
-      --muted: rgba(255,255,255,0.6);
+      --bg:    #060606;
+      --fg:    #ebebeb;
+      --muted: rgba(235,235,235,0.35);
+      --acc:   #7c3aed;
+      --grid:  rgba(235,235,235,0.055);
+      --dur:   0.85s;
+      --ease:  cubic-bezier(0.77,0,0.18,1);
     }
-    * { box-sizing:border-box; margin:0; padding:0; }
-    body {
-      font-family: Inter, sans-serif;
-      background: var(--bg);
-      color: var(--fg);
-      overflow: hidden;
-      touch-action: none;
-    }
-    #fullpage {
-      width: 100%;
-      height: 100vh;
-      overflow: hidden;
-      position: relative;
-    }
-    .section {
-      width: 100%;
-      height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      position: absolute;
-      top: 0;
-      left: 0;
-      opacity: 0;
-      transform: translateY(100%);
-      transition: all 1s cubic-bezier(0.77, 0, 0.175, 1);
-      padding: 20px;
-      text-align: center;
-      z-index: 1;
-    }
-    .section.active {
-      opacity: 1;
-      transform: translateY(0);
-      z-index: 2;
-    }
-    .section.exit-up {
-      transform: translateY(-100%);
-      opacity: 0;
-    }
-    h1,h2,h3 { font-weight:700; margin-bottom:16px; font-size: 6vw; }
-    p { color: var(--muted); font-size:4vw; max-width:90%; line-height:1.5; }
-    a { color: var(--accent); text-decoration:none; }
-    #bgCanvas {
-      position: fixed;
-      top:0;left:0;width:100%;height:100%;
-      z-index:0;
-    }
-    @media (min-width:600px) {
-      h1,h2,h3{font-size:34px;}
-      p{font-size:20px;}
-    }
+
+```
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+html, body {
+  width:100%; height:100%;
+  background:var(--bg); color:var(--fg);
+  overflow:hidden; cursor:crosshair;
+}
+
+/* GRAIN */
+body::after {
+  content:''; position:fixed; inset:0; z-index:999; pointer-events:none;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity:0.04;
+}
+
+#c { position:fixed; inset:0; z-index:0; pointer-events:none; }
+
+.grid {
+  position:fixed; inset:0; z-index:1; pointer-events:none;
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size:72px 72px;
+  -webkit-mask-image:radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 100%);
+          mask-image:radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 100%);
+}
+
+/* CORNERS */
+.cn { position:fixed; z-index:10; pointer-events:none; width:16px; height:16px; }
+.cn::before,.cn::after { content:''; position:absolute; background:rgba(235,235,235,0.2); }
+.cn::before { width:100%; height:1px; top:0; left:0; }
+.cn::after  { width:1px; height:100%; top:0; left:0; }
+.cn.tl { top:24px; left:24px; }
+.cn.tr { top:24px; right:24px; transform:scaleX(-1); }
+.cn.bl { bottom:24px; left:24px; transform:scaleY(-1); }
+.cn.br { bottom:24px; right:24px; transform:scale(-1); }
+
+#logo {
+  position:fixed; top:24px; left:50px; z-index:50;
+  font-family:'Bebas Neue', sans-serif;
+  font-size:13px; letter-spacing:0.4em;
+  color:var(--fg); opacity:0.5;
+}
+
+#ctr {
+  position:fixed; left:24px; bottom:24px; z-index:50;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:9px; letter-spacing:0.25em; color:var(--muted);
+}
+#ctr em { font-style:normal; color:var(--fg); }
+
+#dots {
+  position:fixed; right:28px; top:50%;
+  transform:translateY(-50%); z-index:50;
+  display:flex; flex-direction:column; gap:8px;
+}
+.dot {
+  width:3px; height:3px;
+  background:rgba(235,235,235,0.2);
+  transition:background .3s, transform .3s;
+  cursor:pointer;
+}
+.dot.on { background:var(--fg); transform:scale(1.8); }
+
+/* SCROLL HINT */
+#sl {
+  position:fixed; right:28px; bottom:28px; z-index:50;
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  transition:opacity .5s;
+}
+#sl.gone { opacity:0; pointer-events:none; }
+#sl span {
+  font-family:'IBM Plex Mono', monospace;
+  font-size:8px; letter-spacing:0.3em;
+  color:var(--muted); writing-mode:vertical-lr;
+}
+#sl i {
+  display:block; width:1px; height:36px;
+  background:var(--muted);
+  animation:sl 2s ease-in-out infinite;
+}
+@keyframes sl {
+  0%   { transform:scaleY(0); transform-origin:top; }
+  50%  { transform:scaleY(1); transform-origin:top; }
+  51%  { transform:scaleY(1); transform-origin:bottom; }
+  100% { transform:scaleY(0); transform-origin:bottom; }
+}
+
+/* BLOB */
+#blob {
+  position:fixed; z-index:0; pointer-events:none;
+  width:min(500px,80vw); height:min(500px,80vw);
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(124,58,237,.15) 0%, transparent 70%);
+  filter:blur(80px);
+  top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  transition:left 5s ease, top 5s ease;
+}
+
+/* ── SECTIONS ── */
+#fp { position:fixed; inset:0; z-index:2; }
+
+.s {
+  position:absolute; inset:0;
+  display:flex; flex-direction:column; justify-content:center;
+  padding:0 clamp(32px,10vw,140px);
+  /* transform/opacity controlled entirely by JS */
+}
+
+/* Content children — fade in after section arrives */
+.ey, .hd, .bd, .ru, .dl {
+  opacity:0;
+  transition:opacity .5s ease, transform .5s ease;
+}
+.ey { transform:translateY(8px); }
+.hd { transform:translateY(14px); }
+.bd { transform:translateY(8px); }
+.dl { }
+.ru { transform:scaleX(0); transform-origin:left; }
+
+/* EYEBROW */
+.ey {
+  font-family:'IBM Plex Mono', monospace;
+  font-size:clamp(9px,1vw,11px);
+  letter-spacing:0.45em; text-transform:uppercase;
+  color:var(--acc); margin-bottom:16px;
+}
+
+/* HEADING */
+.hd {
+  font-family:'Bebas Neue', sans-serif;
+  font-size:clamp(58px,13vw,170px);
+  line-height:0.88; color:var(--fg);
+}
+.hd .gh {
+  display:block; color:transparent;
+  -webkit-text-stroke:1.5px rgba(235,235,235,0.14);
+}
+
+/* BODY */
+.bd {
+  font-family:'IBM Plex Mono', monospace;
+  font-weight:300;
+  font-size:clamp(11px,1.4vw,14px);
+  line-height:1.9; color:var(--muted);
+  max-width:480px; margin-top:26px;
+}
+
+/* RULE */
+.ru {
+  margin-top:30px; width:52px; height:1px;
+  background:var(--acc);
+}
+
+/* BIG GHOST NUM */
+.bign {
+  position:absolute; right:7vw; bottom:6vh;
+  font-family:'Bebas Neue', sans-serif;
+  font-size:clamp(120px,26vw,360px);
+  color:transparent;
+  -webkit-text-stroke:1px rgba(235,235,235,0.03);
+  line-height:1; pointer-events:none; user-select:none;
+  letter-spacing:-0.03em;
+}
+
+/* DATE */
+.dl {
+  margin-top:22px;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:clamp(9px,1vw,11px);
+  letter-spacing:0.4em; text-transform:uppercase;
+  color:var(--muted);
+}
+.dv {
+  display:block;
+  font-family:'Bebas Neue', sans-serif;
+  font-size:clamp(44px,8vw,110px);
+  line-height:1; letter-spacing:0.03em;
+  color:var(--fg); margin-top:6px;
+}
+```
+
   </style>
 </head>
 <body>
-  <canvas id="bgCanvas"></canvas>
-  <div id="fullpage">
-    <div class="section active">
 
-      <h1>Only Market</h1>
-      <p>Минималистичный маркетплейс нового поколения. Уникальный стиль и AI-интеграция.</p>
-    </div>
-    <div class="section">
-      <h2>AI Интеграция</h2>
-      <p>АИ поддержка котрая сможет помочь в 90% случаев.</p>
-    </div>
-    <div class="section">
-      <h2>Лучшие условия</h2>
-      <p>Низкая комиссия, честные правила, прозрачные выплаты — лучшее для продавцов и покупателей.</p>
-    </div>
-    <div class="section">
-      <h2>Дата релиза</h2>
-      <p><strong>20 сентября 2025</strong> — ориентировочный запуск Only Market.</p>
-    </div>
-    <div class="section">
-      <h3>Следите за проектом</h3>
-      <p>© Only Market</p>
-    </div>
+<canvas id="c"></canvas>
+
+<div class="grid"></div>
+<div id="blob"></div>
+<div class="cn tl"></div>
+<div class="cn tr"></div>
+<div class="cn bl"></div>
+<div class="cn br"></div>
+<div id="logo">Only Market</div>
+<div id="ctr"><em id="ci">01</em>&nbsp;/&nbsp;05</div>
+<div id="dots"></div>
+<div id="sl"><i></i><span>Scroll</span></div>
+
+<div id="fp">
+
+  <!-- 0 HERO -->
+
+  <div class="s">
+    <span class="ey">Новое поколение — 2026</span>
+    <div class="hd">Only<br><span class="gh">Market</span></div>
+    <p class="bd">Минималистичный маркетплейс нового поколения.<br>Уникальный стиль и AI-интеграция.</p>
+    <div class="ru"></div>
+    <div class="bign">01</div>
   </div>
-  <script>
-    let current = 0;
-    const sections = document.querySelectorAll('.section');
-    let isAnimating = false;
 
-    function showSection(index){
-      if(index<0 || index>=sections.length || isAnimating) return;
-      isAnimating = true;
-      const currentSection = sections[current];
-      const nextSection = sections[index];
-      currentSection.classList.remove('active');
-      currentSection.classList.add('exit-up');
-      setTimeout(()=>{ currentSection.classList.remove('exit-up'); },1000);
-      nextSection.classList.add('active');
-      current = index;
-      setTimeout(()=>isAnimating=false,1000);
-    }
+  <!-- 1 AI -->
 
-    
-    window.addEventListener('wheel', e=>{ if(e.deltaY>0){ showSection(current+1); } else if(e.deltaY<0){ showSection(current-1); } });
+  <div class="s">
+    <span class="ey">Технологии</span>
+    <div class="hd">AI<br><span class="gh">Core</span></div>
+    <p class="bd">АИ-поддержка решает 90% вопросов без участия человека. Быстро. Точно. Всегда.</p>
+    <div class="ru"></div>
+  </div>
 
-    
-    let startY = null;
-    window.addEventListener('touchstart', e=>{ startY = e.touches[0].clientY; });
-    window.addEventListener('touchend', e=>{
-      if(startY === null) return;
-      let endY = e.changedTouches[0].clientY;
-      let diff = startY - endY;
-      if(Math.abs(diff) > 50){
-        if(diff > 0){ showSection(current+1); }
-        else{ showSection(current-1); }
-      }
-      startY = null;
-    });
+  <!-- 2 TERMS -->
 
-   
-    const canvas = document.getElementById('bgCanvas');
-    const ctx = canvas.getContext('2d');
-    let w,h;
-    function resize(){ w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
-    window.addEventListener('resize', resize); resize();
-    const orbs = Array.from({length:18},()=>({ x:Math.random()*w, y:Math.random()*h, r:60+Math.random()*140, dx:(Math.random()-0.5)*1.2, dy:(Math.random()-0.5)*1.2, color:`hsla(${260+Math.random()*60},100%,70%,0.12)` }));
-    function animate(){ ctx.clearRect(0,0,w,h); for(let o of orbs){ ctx.beginPath(); ctx.fillStyle=o.color; ctx.arc(o.x,o.y,o.r,0,Math.PI*2); ctx.fill(); o.x+=o.dx; o.y+=o.dy; if(o.x<-o.r||o.x>w+o.r)o.dx*=-1; if(o.y<-o.r||o.y>h+o.r)o.dy*=-1; } requestAnimationFrame(animate); }
-    animate();
-  </script>
+  <div class="s">
+    <span class="ey">Условия</span>
+    <div class="hd">Лучшие<br><span class="gh">Правила</span></div>
+    <p class="bd">Низкая комиссия, честные правила, прозрачные выплаты — лучшее для продавцов и покупателей.</p>
+    <div class="ru"></div>
+  </div>
+
+  <!-- 3 DATE -->
+
+  <div class="s">
+    <span class="ey">Запуск</span>
+    <div class="hd">Дата<br><span class="gh">Релиза</span></div>
+    <div class="dl">
+      Ориентировочный старт
+      <span class="dv">09.06.2026</span>
+    </div>
+    <div class="ru"></div>
+  </div>
+
+  <!-- 4 FOLLOW -->
+
+  <div class="s">
+    <span class="ey">Контакт</span>
+    <div class="hd">Следите<br><span class="gh">За нами</span></div>
+    <p class="bd">© Only Market — Все права защищены</p>
+    <div class="ru"></div>
+  </div>
+
+</div>
+
+<script>
+/* ── SECTIONS ── */
+const secs = [...document.querySelectorAll('#fp .s')];
+const N = secs.length;
+let cur = 0, busy = false;
+
+const CONTENT_SEL = '.ey,.hd,.bd,.ru,.dl';
+const DUR = 850; // ms, matches --dur
+
+/* Set position instantly (no transition) */
+function snap(el, pos) {
+  el.style.transition = 'none';
+  el.style.opacity    = pos === 'mid' ? '1' : '0';
+  el.style.transform  = pos === 'bot' ? 'translateY(100vh)'
+                      : pos === 'top' ? 'translateY(-100vh)'
+                      : 'translateY(0)';
+  el.style.pointerEvents = pos === 'mid' ? 'auto' : 'none';
+}
+
+/* Animate to position */
+function slide(el, pos) {
+  el.style.transition = `transform var(--dur) var(--ease), opacity var(--dur) var(--ease)`;
+  el.style.opacity    = pos === 'mid' ? '1' : '0';
+  el.style.transform  = pos === 'bot' ? 'translateY(100vh)'
+                      : pos === 'top' ? 'translateY(-100vh)'
+                      : 'translateY(0)';
+  el.style.pointerEvents = pos === 'mid' ? 'auto' : 'none';
+}
+
+/* Staggered content reveal */
+function showContent(el) {
+  const kids = [...el.querySelectorAll(CONTENT_SEL)];
+  kids.forEach((k, i) => {
+    setTimeout(() => {
+      k.style.opacity   = '1';
+      k.style.transform = k.classList.contains('ru') ? 'scaleX(1)' : 'translateY(0)';
+    }, 180 + i * 90);
+  });
+}
+
+function hideContent(el) {
+  el.querySelectorAll(CONTENT_SEL).forEach(k => {
+    k.style.opacity   = '0';
+    k.style.transform = k.classList.contains('ru') ? 'scaleX(0)' : '';
+  });
+}
+
+/* Init: first section at centre, rest below */
+secs.forEach((s, i) => {
+  snap(s, i === 0 ? 'mid' : 'bot');
+  if (i === 0) showContent(s);
+});
+
+function go(next) {
+  if (next < 0 || next >= N || next === cur || busy) return;
+  busy = true;
+
+  const down = next > cur;
+  const from = secs[cur];
+  const to   = secs[next];
+
+  /* Snap destination to starting position without transition */
+  snap(to, down ? 'bot' : 'top');
+  hideContent(to);
+
+  /* Force reflow so snap applies before we re-enable transitions */
+  to.getBoundingClientRect();
+
+  /* Animate */
+  requestAnimationFrame(() => {
+    slide(from, down ? 'top' : 'bot');
+    slide(to,   'mid');
+    showContent(to);
+    cur = next;
+    updateUI();
+    setTimeout(() => { busy = false; }, DUR + 50);
+  });
+}
+
+/* ── UI ── */
+const dotsEl = document.getElementById('dots');
+secs.forEach((_, i) => {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i === 0 ? ' on' : '');
+  d.onclick = () => go(i);
+  dotsEl.appendChild(d);
+});
+
+function updateUI() {
+  document.getElementById('ci').textContent = String(cur + 1).padStart(2, '0');
+  dotsEl.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('on', i === cur));
+  document.getElementById('sl').classList.toggle('gone', cur > 0);
+}
+
+/* ── INPUT ── */
+let wt = false;
+window.addEventListener('wheel', e => {
+  if (wt) return;
+  wt = true;
+  go(e.deltaY > 0 ? cur + 1 : cur - 1);
+  setTimeout(() => wt = false, DUR + 100);
+}, { passive: true });
+
+let ty = null;
+window.addEventListener('touchstart', e => { ty = e.touches[0].clientY; }, { passive: true });
+window.addEventListener('touchend', e => {
+  if (ty === null) return;
+  const d = ty - e.changedTouches[0].clientY;
+  if (Math.abs(d) > 48) go(d > 0 ? cur + 1 : cur - 1);
+  ty = null;
+});
+
+window.addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown' || e.key === 'PageDown') go(cur + 1);
+  if (e.key === 'ArrowUp'   || e.key === 'PageUp')   go(cur - 1);
+});
+
+/* ── BLOB ── */
+const blob = document.getElementById('blob');
+function drift() {
+  blob.style.left = (28 + Math.random() * 44) + '%';
+  blob.style.top  = (28 + Math.random() * 44) + '%';
+}
+drift(); setInterval(drift, 5000);
+
+/* ── CANVAS ── */
+const cv = document.getElementById('c');
+const cx = cv.getContext('2d');
+let W, H;
+function resize() { W = cv.width = innerWidth; H = cv.height = innerHeight; }
+window.addEventListener('resize', resize); resize();
+
+const lines = Array.from({ length: 5 }, () => ({
+  x: Math.random() * W, y: Math.random() * H,
+  len: 80 + Math.random() * 160,
+  a: Math.random() * Math.PI,
+  da: .002 + Math.random() * .002,
+  dx: (Math.random() - .5) * .35,
+  dy: (Math.random() - .5) * .35,
+  op: .025 + Math.random() * .03,
+}));
+
+const pts = Array.from({ length: 35 }, () => ({
+  x: Math.random() * W, y: Math.random() * H,
+  r: .5 + Math.random() * .8,
+  al: .04 + Math.random() * .07,
+  dx: (Math.random() - .5) * .12,
+  dy: (Math.random() - .5) * .12,
+}));
+
+function frame() {
+  cx.clearRect(0, 0, W, H);
+
+  for (const l of lines) {
+    const cos = Math.cos(l.a) * l.len / 2;
+    const sin = Math.sin(l.a) * l.len / 2;
+    cx.strokeStyle = `rgba(235,235,235,${l.op})`;
+    cx.lineWidth = .5;
+    cx.beginPath();
+    cx.moveTo(l.x - cos, l.y - sin);
+    cx.lineTo(l.x + cos, l.y + sin);
+    cx.stroke();
+    l.x += l.dx; l.y += l.dy; l.a += l.da;
+    if (l.x < -l.len) l.x = W + l.len; if (l.x > W + l.len) l.x = -l.len;
+    if (l.y < -l.len) l.y = H + l.len; if (l.y > H + l.len) l.y = -l.len;
+  }
+
+  for (const p of pts) {
+    cx.fillStyle = `rgba(124,58,237,${p.al})`;
+    cx.beginPath();
+    cx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    cx.fill();
+    p.x += p.dx; p.y += p.dy;
+    if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+    if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+  }
+
+  requestAnimationFrame(frame);
+}
+frame();
+</script>
+
 </body>
 </html>
